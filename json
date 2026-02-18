@@ -1,0 +1,5 @@
+"homepage": "https://sgbtech.github.io/Bembriidge-team-availability-pw"
+"scripts": {
+  "predeploy": "npm run build",
+  "deploy": "gh-pages -d build"
+}
