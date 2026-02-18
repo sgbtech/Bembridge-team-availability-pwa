@@ -1,0 +1,8 @@
+"homepage": "https://sgbtech.github.io/Bembridge-team-availability-pwa"
+
+"scripts": {
+  "start": "react-scripts start",
+  "build": "react-scripts build",
+  "predeploy": "npm run build",
+  "deploy": "gh-pages -d build"
+}
