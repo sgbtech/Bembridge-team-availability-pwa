@@ -1,0 +1,161 @@
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+
+// Example simple UI components
+function Badge({ children, className }) {
+  return <span className={`px-2 py-1 rounded ${className}`}>{children}</span>;
+}
+function Button({ children, onClick, className, disabled }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1 rounded border ${className} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+}
+function Input({ value, onChange, placeholder }) {
+  return (
+    <input
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="border px-2 py-1 rounded w-full"
+    />
+  );
+}
+
+const initialTeam = [
+  { id: 1, name: "Andy Squibb", status: "Available" },
+  { id: 2, name: "Andrew Hunt", status: "Available" },
+  { id: 3, name: "Steve Biggs", status: "Available" },
+  { id: 4, name: "Steve Wilson", status: "Available" },
+  { id: 5, name: "Steve Vidler", status: "Available" },
+  { id: 6, name: "Crispin Kenyon", status: "Available" },
+  { id: 7, name: "Andy Green", status: "Available" },
+  { id: 8, name: "Matt Randall", status: "Available" },
+  { id: 9, name: "Rosco Harris", status: "Available" },
+  { id: 10, name: "Rodney Parker", status: "Available" },
+  { id: 11, name: "Nicholas Harrison", status: "Available" },
+  { id: 12, name: "Dan", status: "Available" },
+];
+
+const allowedOIC = ["Andy Squibb", "Andrew Hunt", "Steve Biggs", "Steve Wilson", "Steve Vidler", "Crispin Kenyon", "Rodney Parker"];
+const allowedSO_DSO = ["Andy Squibb", "Andrew Hunt"];
+
+const statusColors = {
+  Available: "bg-green-200 text-green-800",
+  Standby: "bg-yellow-200 text-yellow-800",
+  Unavailable: "bg-red-200 text-red-800",
+};
+
+export default function TeamAvailabilityApp() {
+  const [user, setUser] = useState(null);
+  const [loginName, setLoginName] = useState("");
+  const [loginRole, setLoginRole] = useState("Team");
+  const [team, setTeam] = useState(initialTeam);
+  const [newName, setNewName] = useState("");
+  const [filter, setFilter] = useState("All");
+
+  const login = () => {
+    const trimmed = loginName.trim();
+    if (!trimmed) return;
+
+    if (loginRole === "OIC" && !allowedOIC.includes(trimmed)) return alert("Only allowed OICs");
+    if (loginRole === "SO/DSO" && !allowedSO_DSO.includes(trimmed)) return alert("Only allowed SO/DSO");
+
+    setUser({ name: trimmed, role: loginRole });
+  };
+  const logout = () => {
+    setUser(null);
+    setLoginName("");
+  };
+  const addMember = () => {
+    if (user?.role !== "SO/DSO") return;
+    if (!newName.trim()) return;
+    setTeam([...team, { id: Date.now(), name: newName, status: "Available" }]);
+    setNewName("");
+  };
+  const removeMember = (id) => {
+    if (user?.role !== "SO/DSO") return;
+    setTeam(team.filter(m => m.id !== id));
+  };
+  const updateStatus = (id, status) => {
+    if (user?.role !== "SO/DSO" && user.name !== team.find(m => m.id === id)?.name) return;
+    setTeam(team.map(m => m.id === id ? { ...m, status } : m));
+  };
+
+  const filteredTeam = filter === "All" ? team : team.filter(m => m.status === filter);
+  const currentDate = new Date().toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="border p-4 rounded shadow w-full max-w-md">
+          <h1 className="text-xl font-bold mb-2">Bembridge Team Availability</h1>
+          <Input placeholder="Your Name" value={loginName} onChange={e => setLoginName(e.target.value)} />
+          <div className="flex gap-2 mt-2">
+            {['SO/DSO','OIC','Team'].map(role => {
+              const disabled = role === "SO/DSO" && !allowedSO_DSO.includes(loginName.trim());
+              return <Button key={role} onClick={() => !disabled && setLoginRole(role)} disabled={disabled}>{role}</Button>
+            })}
+          </div>
+          <Button className="mt-2 w-full" onClick={login}>Login</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen p-4">
+      <div className="max-w-5xl mx-auto space-y-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Bembridge Team Availability</h1>
+          <div className="flex gap-2 items-center">
+            <Badge className="bg-blue-200 text-blue-800">{user.role}</Badge>
+            <span>{user.name}</span>
+            <Button onClick={logout}>Logout</Button>
+          </div>
+        </div>
+
+        <div className="border p-2 rounded text-center">
+          <span className="font-medium">{currentDate}</span>
+        </div>
+
+        {/* Add / Filter for SO/DSO */}
+        <div className="border p-2 rounded space-y-2">
+          {user.role === "SO/DSO" && (
+            <div className="flex gap-2">
+              <Input placeholder="Add member" value={newName} onChange={e=>setNewName(e.target.value)} />
+              <Button onClick={addMember}>Add</Button>
+            </div>
+          )}
+          <div className="flex gap-2">
+            {['All','Available','Standby','Unavailable'].map(s => (
+              <Button key={s} onClick={()=>setFilter(s)}>{s}</Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-2">
+          {filteredTeam.map(member => (
+            <div key={member.id} className="border p-2 rounded flex justify-between items-center">
+              <div>
+                <div className="font-semibold">{member.name} {allowedOIC.includes(member.name) && <Badge className="bg-purple-200 text-purple-800">OIC</Badge>}</div>
+                <Badge className={statusColors[member.status]}>{member.status}</Badge>
+              </div>
+              <div className="flex gap-1">
+                {['Available','Standby','Unavailable'].map(s => (
+                  <Button key={s} onClick={()=>updateStatus(member.id,s)} disabled={user.role!=='SO/DSO' && user.name!==member.name}>{s}</Button>
+                ))}
+                {user.role==='SO/DSO' && <Button onClick={()=>removeMember(member.id)}>Remove</Button>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
